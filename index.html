@@ -459,13 +459,49 @@ function timeAgo(ts) {
 }
 
 /* 수집되지 않은 계정은 플랫폼의 공식 임베드로 표시합니다. */
-function renderSocialEmbeds(platform, accounts, posts) {
+function renderSocialEmbeds(platform, accounts, posts, page = 0, selected = '') {
   const box = document.getElementById(platform === 'instagram' ? 'reelsEmbeds' : 'ttEmbeds');
   box.replaceChildren();
   const missing = accounts.filter(account => !posts.some(post => post.account === account));
   if (!missing.length) return;
-  box.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;margin-top:20px';
+  box.style.cssText = 'margin-top:20px';
+  const controls = document.createElement('div');
+  controls.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:20px';
+  const label = document.createElement('label');
+  label.textContent = '미리보기 계정 ';
+  const select = document.createElement('select');
+  select.style.cssText = 'max-width:100%;padding:10px;border-radius:8px;background:var(--card);color:var(--text)';
+  const all = document.createElement('option');
+  all.value = ''; all.textContent = `전체 ${missing.length}개 계정 · 6개씩 보기`;
+  select.appendChild(all);
   for (const account of missing) {
+    const option = document.createElement('option');
+    option.value = account; option.textContent = `@${account}`;
+    select.appendChild(option);
+  }
+  select.value = selected;
+  select.onchange = () => renderSocialEmbeds(platform, accounts, posts, 0, select.value);
+  label.appendChild(select); controls.appendChild(label);
+  const pageSize = 6;
+  const totalPages = Math.ceil(missing.length / pageSize);
+  const currentPage = Math.min(Math.max(0, page), totalPages - 1);
+  if (!selected && totalPages > 1) {
+    const prev = document.createElement('button');
+    prev.className = 'chip'; prev.textContent = '← 이전 계정'; prev.disabled = currentPage === 0;
+    prev.onclick = () => renderSocialEmbeds(platform, accounts, posts, currentPage - 1);
+    const count = document.createElement('span'); count.textContent = `${currentPage + 1} / ${totalPages}`;
+    const next = document.createElement('button');
+    next.className = 'chip'; next.textContent = '다음 계정 →'; next.disabled = currentPage === totalPages - 1;
+    next.onclick = () => renderSocialEmbeds(platform, accounts, posts, currentPage + 1);
+    controls.append(prev, count, next);
+  }
+  box.appendChild(controls);
+  const previews = document.createElement('div');
+  previews.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:20px';
+  box.appendChild(previews);
+  const visible = selected ? missing.filter(account => account === selected)
+    : missing.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  for (const account of visible) {
     if (!/^[a-zA-Z0-9._]+$/.test(account)) continue;
     const url = platform === 'instagram'
       ? `https://www.instagram.com/${account}/`
@@ -492,7 +528,7 @@ function renderSocialEmbeds(platform, accounts, posts) {
     const fallback = link.cloneNode(true);
     fallback.style.color = '#222';
     section.appendChild(fallback); embed.appendChild(section);
-    card.appendChild(embed); box.appendChild(card);
+    card.appendChild(embed); previews.appendChild(card);
   }
   if (platform === 'instagram' && window.instgrm) {
     window.instgrm.Embeds.process();

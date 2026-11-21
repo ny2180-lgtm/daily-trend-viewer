@@ -56,3 +56,16 @@ python3 ~/trend-viewer/server.py
 - 틱톡은 등록한 계정의 게시물만 수집합니다. 전체 인기 피드는 섞지 않습니다.
 - 공식 임베드는 플랫폼이 제공하는 게시물 순서로 표시되며 사이트의 조회수·좋아요 정렬 대상이 아닙니다. 일부 영상은 원본 페이지에서 재생해야 합니다.
 - 이전 배포 데이터를 재사용할 때도 현재 등록한 계정의 게시물만 남깁니다.
+
+## 뷰티 광고 참고 계정 확장 (2026-11-21)
+
+기존 계정을 유지하고 릴스 34개, 틱톡 27개 계정으로 확장했습니다. 광고 성과 순위가 아닌 콘텐츠 기획 참고용 선정입니다. 계정의 모든 게시물이 광고인 것은 아닙니다.
+
+- K뷰티 브랜드: COSRX, Anua, SKIN1004, 조선미녀, 라운드랩, 토리든, 바이오던스, 메디큐브, 롬앤, 데이지크, 어뮤즈, 라네즈 등. 제품 사용법, 제형 표현, 패키지 연출과 크리에이터 협업을 참고합니다.
+- 해외 브랜드: Rare Beauty, rhode, Fenty Beauty, e.l.f. 제품 시연, 메이크업 표현과 브랜드별 숏폼 연출을 참고합니다.
+- 국내 크리에이터: 이사배, 포니, 레오제이, 민스코, 라뮤끄. 튜토리얼, 발색 비교와 제품 설명 방식을 참고합니다.
+- 글로벌 크리에이터: Glowwithava, Ben Neiley, James Welsh, GlowbyRamon, NikkieTutorials, Meredith Duxbury, Sarah Cheung 등. 리뷰 구성, 도입부와 사용 과정을 참고합니다.
+- UGC·협찬 콘텐츠 참고: Joy Burnett, Aisha Potter, Lavish Krish의 공개 브랜드 협업 사례를 참고합니다.
+- 계정이 많아져 공식 미리보기는 한 번에 6개씩 표시합니다. 이전/다음 버튼 또는 계정 선택 메뉴로 이동할 수 있습니다.
+
+아이디 확인 참고: [COSRX 공식 링크](https://linktr.ee/cosrx), [어뮤즈 공식 링크](https://linktr.ee/amusemakeup), [데이지크 공식 링크](https://linktr.ee/dasique), [롬앤 공식몰](https://romand.cafe24.com/), [Ben Neiley 본인 채널](https://www.youtube.com/channel/UCQdy_TEjOzpk_kAfSOjB0nw), [라네즈 공개 협업 사례](https://www.modash.io/content-library/brands/laneige-examples). 틱톡 추가 계정은 공식 공개 임베드의 아이디·이름·소개를 확인했고, 동명 빈 계정이나 뷰티와 무관한 계정은 제외했습니다. 인스타그램 계정은 공개 프로필과 공식 링크·협업 사례를 대조했습니다. 아이디와 임베드 제공 여부는 추후 변경될 수 있습니다.
