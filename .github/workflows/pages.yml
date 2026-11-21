@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "23 * * * *"  # 매시 23분 (UTC 기준, 실제 실행은 몇 분 지연될 수 있음)
+    - cron: "0 22 * * *"  # 매일 UTC 22:00 = 다음 날 한국 시간 07:00 (실행 지연 가능)
   workflow_dispatch:
 
 permissions:
@@ -25,9 +25,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: 데이터 수집 및 정적 사이트 생성
-        run: python3 collect.py _site
       - uses: actions/configure-pages@v5
+        id: pages
+      - name: 데이터 수집 및 정적 사이트 생성
+        env:
+          PAGES_BASE: ${{ steps.pages.outputs.base_url }}/
+        run: python3 collect.py _site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

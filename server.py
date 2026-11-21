@@ -11,6 +11,8 @@ import json
 import math
 import os
 import re
+import ssl
+import sys
 import threading
 import time
 import urllib.request
@@ -36,18 +38,15 @@ IMG_CACHE_MAX = 600
 # ---------------------------------------------------------------- 유튜브
 # 카테고리 → 유튜브 검색어 매핑
 CATEGORIES = {
-    "먹방": "먹방",
-    "뷰티/패션": "뷰티 메이크업 패션",
-    "브이로그": "브이로그",
-    "예능/코미디": "예능 웃긴 영상",
-    "영화/드라마": "영화 드라마 리뷰",
-    "테크/IT": "테크 리뷰",
-    "지식/교육": "지식 교양",
-    "여행": "여행",
-    "동물": "강아지 고양이",
+    "뷰티": ["메이크업 튜토리얼", "스킨케어 루틴", "화장품 리뷰", "올리브영 추천"],
+    "식품": ["신상 식품 리뷰", "편의점 신상", "간편식 추천", "푸드 트렌드"],
+    "K뷰티": ["K beauty", "Korean skincare", "Korean makeup", "K뷰티 트렌드"],
+    "뷰티인플루언서": ["뷰티 유튜버 추천템", "인플루언서 메이크업", "겟레디윗미 메이크업", "beauty influencer favorites"],
+    "UGC": ["뷰티 UGC", "UGC skincare", "UGC product video", "UGC creator tips"],
+    "콘텐츠 제작": ["숏폼 제작", "제품 영상 촬영", "뷰티 콘텐츠 제작", "릴스 편집"],
 }
-# "전체" 탭은 아래 카테고리들을 합쳐 조회수순으로 재정렬
-ALL_MERGE = ["먹방", "브이로그", "예능/코미디", "뷰티/패션", "영화/드라마", "여행"]
+# "전체"는 모든 분야의 검색 결과를 합쳐 중복 제거 후 조회수순으로 정렬
+ALL_MERGE = list(CATEGORIES)
 
 # 검색 필터 protobuf: 업로드 날짜 (2=오늘, 3=이번 주, 4=이번 달)
 PERIOD_CODE = {"day": 2, "week": 3, "month": 4}
@@ -131,6 +130,14 @@ def build_search_params(period: str, shorts: bool = False) -> str:
     return base64.urlsafe_b64encode(raw).decode()
 
 
+# python.org의 macOS 배포판에 기본 CA 파일이 없으면 시스템 CA를 사용합니다.
+TLS_CONTEXT = ssl.create_default_context()
+if (sys.platform == "darwin" and not ssl.get_default_verify_paths().cafile
+        and not os.environ.get("SSL_CERT_FILE") and not os.environ.get("SSL_CERT_DIR")
+        and os.path.isfile("/etc/ssl/cert.pem")):
+    TLS_CONTEXT.load_verify_locations(cafile="/etc/ssl/cert.pem")
+
+
 def http_get(url: str, payload=None, headers=None, timeout=15):
     data = json.dumps(payload).encode() if payload is not None else None
     req = urllib.request.Request(url, data=data)
@@ -139,7 +146,7 @@ def http_get(url: str, payload=None, headers=None, timeout=15):
         req.add_header("Content-Type", "application/json")
     for k, v in (headers or {}).items():
         req.add_header(k, v)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with urllib.request.urlopen(req, timeout=timeout, context=TLS_CONTEXT) as resp:
         return resp.headers.get("Content-Type", ""), resp.read()
 
 
@@ -260,11 +267,9 @@ def get_videos(category: str, period: str, shorts: bool, force: bool, enrich: bo
         if query:
             queries = [query]
         elif category == "전체":
-            queries = [CATEGORIES[c] for c in ALL_MERGE]
-        elif category == "AI":
-            queries = AI_YT_QUERIES
+            queries = [q for c in ALL_MERGE for q in CATEGORIES[c]]
         else:
-            queries = [CATEGORIES.get(category, category)]
+            queries = CATEGORIES[category]
         vids = merge_yt_searches(queries, period, shorts)
         if enrich:
             enrich_likes(vids)
@@ -560,7 +565,7 @@ def fetch_threads_posts(username: str):
         for k, v in headers.items():
             req.add_header(k, v)
         try:
-            with urllib.request.urlopen(req, timeout=12) as resp:
+            with urllib.request.urlopen(req, timeout=12, context=TLS_CONTEXT) as resp:
                 data = json.loads(resp.read().decode())
         except Exception:
             continue
@@ -657,9 +662,9 @@ def get_tiktok(force: bool):
     accounts = load_accounts(TIKTOK_ACCOUNTS_FILE, DEFAULT_TIKTOK_ACCOUNTS)
 
     def fetch():
-        # 트렌딩(전체 인기) + 구독 계정 최신 영상을 합쳐 중복 제거.
+        # 등록한 계정의 영상만 수집하고 중복 제거.
         # tikwm 무료 티어의 레이트리밋을 피하려 동시성을 낮춥니다.
-        posts = fetch_tiktok_trending()
+        posts = []
         with ThreadPoolExecutor(max_workers=3) as pool:
             for chunk in pool.map(fetch_tiktok_user, accounts):
                 posts.extend(chunk)
@@ -791,7 +796,7 @@ class Handler(BaseHTTPRequestHandler):
             shorts = qs.get("shorts", ["0"])[0] == "1"
             enrich = qs.get("enrich", ["0"])[0] == "1"
             query = qs.get("q", [""])[0].strip()
-            if not query and category not in ("전체", "AI") and category not in CATEGORIES:
+            if not query and category != "전체" and category not in CATEGORIES:
                 self._send(400, {"error": "unknown category"})
                 return
             videos, fetched_at = get_videos(category, period, shorts, force, enrich, query)
@@ -799,7 +804,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == "/api/categories":
-            self._send(200, {"categories": ["전체", "AI"] + list(CATEGORIES.keys())})
+            self._send(200, {"categories": ["전체"] + list(CATEGORIES.keys())})
             return
 
         if parsed.path == "/api/reels":

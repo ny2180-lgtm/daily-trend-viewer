@@ -24,9 +24,8 @@ PAGES_BASE = os.environ.get("PAGES_BASE", "https://lmorejh.github.io/daily-trend
 
 # static_shim.js의 SLUG와 반드시 일치해야 합니다 (파일명에 쓸 영문 슬러그)
 CATEGORY_SLUGS = {
-    "전체": "all", "AI": "ai", "먹방": "mukbang", "뷰티/패션": "beauty",
-    "브이로그": "vlog", "예능/코미디": "fun", "영화/드라마": "movie",
-    "테크/IT": "tech", "지식/교육": "edu", "여행": "travel", "동물": "animal",
+    "전체": "all", "뷰티": "beauty", "식품": "food", "K뷰티": "kbeauty",
+    "뷰티인플루언서": "beauty_influencer", "UGC": "ugc", "콘텐츠 제작": "content_creation",
 }
 
 
@@ -97,6 +96,11 @@ def carry_forward(name, items_key, current):
         pass
     best, label = None, ""
     for cand, lab in ((prev, "이전 스냅샷"), (seed, "시드")):
+        if cand and name in ("reels.json", "tiktok.json"):
+            allowed = set(current.get("accounts", []))
+            cand = {**cand, "accounts": current.get("accounts", []),
+                    items_key: [item for item in cand.get(items_key, [])
+                                if item.get("account") in allowed]}
         if cand and cand.get(items_key) and \
                 (best is None or cand.get("fetchedAt", 0) > best.get("fetchedAt", 0)):
             best, label = cand, lab
@@ -138,13 +142,13 @@ def build_site():
 
 
 def main():
-    assert set(CATEGORY_SLUGS) == {"전체", "AI", *server.CATEGORIES}, \
+    assert set(CATEGORY_SLUGS) == {"전체", *server.CATEGORIES}, \
         "server.py 카테고리가 바뀌었습니다. CATEGORY_SLUGS를 갱신하세요."
     t0 = time.time()
     os.makedirs(os.path.join(OUT, "data"), exist_ok=True)
     os.makedirs(os.path.join(OUT, "img"), exist_ok=True)
 
-    write_json("categories.json", {"categories": ["전체", "AI"] + list(server.CATEGORIES)})
+    write_json("categories.json", {"categories": ["전체"] + list(server.CATEGORIES)})
     collect_videos()
 
     reels, accounts, fetched = server.get_reels(False)
