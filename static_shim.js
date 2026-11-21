@@ -10,6 +10,7 @@
   const jsonResp = obj => Promise.resolve(
     new Response(JSON.stringify(obj), { headers: { "Content-Type": "application/json" } }));
 
+  const snapshotVersion = new URL(document.currentScript.src).searchParams.get("v") || "";
   const realFetch = window.fetch.bind(window);
   window.fetch = (input, init) => {
     const raw = typeof input === "string" ? input : input.url;
@@ -35,7 +36,7 @@
     else if (path === "/api/threads") target = "data/threads.json";
     else if (path === "/api/tiktok") target = "data/tiktok.json";
 
-    return target ? realFetch(target) : realFetch(input, init);
+    return target ? realFetch(target + (snapshotVersion ? "?v=" + encodeURIComponent(snapshotVersion) : ""), { cache: "no-cache" }) : realFetch(input, init);
   };
 
   // /api/img?u=... 썸네일: collect.py가 내려받은 로컬 사본(img/...)으로 바꿉니다

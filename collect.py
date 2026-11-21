@@ -134,7 +134,7 @@ def build_site():
     with open(os.path.join(base, "index.html"), encoding="utf-8") as f:
         html = f.read()
     # 메인 스크립트 앞에 정적 모드 심(shim)을 끼워 /api/* 호출을 JSON 파일로 돌립니다
-    html = html.replace("<script>", '<script src="static_shim.js"></script>\n<script>', 1)
+    html = html.replace("<script>", '<script src="static_shim.js?v=%d"></script>\n<script>' % int(time.time()), 1)
     with open(os.path.join(OUT, "index.html"), "w", encoding="utf-8") as f:
         f.write(html)
     shutil.copy(os.path.join(base, "static_shim.js"), os.path.join(OUT, "static_shim.js"))
